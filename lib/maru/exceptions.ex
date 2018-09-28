@@ -9,7 +9,7 @@ defmodule Maru.Exceptions do
         * `:illegal` raised when parse param error
     """
 
-    defexception [:reason, :param, :value]
+    defexception [:reason, :param, :value, :cause]
     def message(e) do
       "Parsing Param Error: #{e.param}"
     end

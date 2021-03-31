@@ -14,12 +14,12 @@ To get started with Maru, add the following to `mix.exs`:
 ```elixir
 def deps() do
   [
-    {:maru, "~> 0.13"},
-    {:cowboy, "~> 2.3"},
+    {:maru, "~> 0.14"},
+    {:plug_cowboy, "~> 2.0"},
 
     # Optional dependency, you can also add your own json_library dependency
     # and config with `config :maru, json_library, YOUR_JSON_LIBRARY`.
-    {:jason, "~> 1.0"},
+    {:jason, "~> 1.1"}
   ]
 end
 ```
@@ -117,18 +117,53 @@ defmodule MyApp.API do
 end
 ```
 
+In your `Application` module, add `Server` as a worker:
+
+```elixir
+defmodule MyApp.Application do
+  use Application
+
+  def start(_type, _args) do
+    children = [
+      MyApp.Server
+    ]
+
+    opts = [strategy: :one_for_one, name: MyApp.Supervisor]
+    Supervisor.start_link(children, opts)
+  end
+end
+```
+
 Then configure `maru`:
 
 ```elixir
 # config/config.exs
 config :my_app, MyApp.Server,
-  adapter: Plug.Adapters.Cowboy2,
+  adapter: Plug.Cowboy,
   plug: MyApp.API,
   scheme: :http,
   port: 8880
 
 config :my_app,
-  maru_servers: [MyAPP.Server]
+  maru_servers: [MyApp.Server]
+```
+
+Or let `maru` works with `confex` :
+
+```elixir
+config :my_app, MyApp.Server,
+  adapter: Plug.Cowboy,
+  plug: MyApp.API,
+  scheme: :http,
+  port: {:system, "PORT"}
+
+defmodule MyApp.Server do
+  use Maru.Server, otp_app: :my_app
+
+  def init(_type, opts) do
+    Confex.Resolver.resolve(opts)
+  end
+end
 ```
 
 For more information, check out  [Guides](https://maru.readme.io) and [Examples](https://github.com/elixir-maru/maru_examples)

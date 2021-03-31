@@ -13,7 +13,7 @@ defmodule Maru.Server do
   Could be configured with:
 
       config :my_api, MyServer,
-        adapter: Plug.Adapters.Cowboy2,
+        adapter: Plug.Cowboy,
         plug: MyAPI,
         port: 8080,
         scheme: :http,
@@ -22,10 +22,9 @@ defmodule Maru.Server do
   """
 
   defmacro __using__(opts) do
-    otp_app = Keyword.fetch!(opts, :otp_app)
-
-    quote bind_quoted: [otp_app: otp_app, module: __MODULE__] do
-      @otp_options Application.get_env(otp_app, __MODULE__, [])
+    quote bind_quoted: [opts: opts, module: __MODULE__] do
+      @otp_options opts |> Keyword.get(:otp_app) |> Application.get_env(__MODULE__, [])
+      @opts opts |> Keyword.delete(:otp_app) |> Keyword.merge(@otp_options)
       @module module
 
       def init(_, opts) do
@@ -33,13 +32,13 @@ defmodule Maru.Server do
       end
 
       def start_link(opts \\ []) do
-        opts = Keyword.merge(@otp_options, opts)
+        opts = Keyword.merge(@opts, opts)
         {:ok, opts} = init(:runtime, opts)
         @module.start_link(opts)
       end
 
       def child_spec(opts \\ []) do
-        opts = Keyword.merge(@otp_options, opts)
+        opts = Keyword.merge(@opts, opts)
         {:ok, opts} = init(:supervisor, opts)
         @module.child_spec(opts)
       end
@@ -47,7 +46,7 @@ defmodule Maru.Server do
       defoverridable init: 2
 
       def __plug__ do
-        @otp_options[:plug]
+        @opts[:plug]
       end
 
       defmacro __using__(options) do
@@ -97,7 +96,7 @@ defmodule Maru.Server do
   @default_scheme :http
   @default_ports http: 4000, https: 4040
   @default_bind_addr {127, 0, 0, 1}
-  @default_adapter Plug.Adapters.Cowboy2
+  @default_adapter Plug.Cowboy
   defp config(opts) do
     adapter = opts[:adapter] || @default_adapter
     scheme = opts[:scheme] || @default_scheme

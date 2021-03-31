@@ -44,9 +44,9 @@ defmodule PlugRouter.Runtime do
     try do
       func.(value)
     rescue
-      _ ->
+      e ->
         Maru.Exceptions.InvalidFormat
-        |> raise(reason: :illegal, param: attr_name, value: value)
+        |> raise(reason: :illegal, param: attr_name, value: value, cause: e)
     end
   end
 

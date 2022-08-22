@@ -15,6 +15,8 @@ defmodule Maru do
     @version
   end
 
+  json_library = Application.get_env(:maru, :json_library, Poison)
+
   @doc false
   def start(_type, _args) do
     Maru.Supervisor.start_link
@@ -25,6 +27,11 @@ defmodule Maru do
     Enum.filter(Application.get_all_env(:maru), fn {k, _} ->
       match?("Elixir." <> _, to_string(k))
     end)
+  end
+
+  @doc false
+  def json_library do
+    unquote(json_library)
   end
 
 end

@@ -16,9 +16,7 @@ defmodule Maru.Supervisor do
       end
     end
     |> List.flatten
-    |> supervise(strategy: :one_for_one)
-   # |> then(fn mod -> child_spec(mod, id: mod, start: {mod, :start_link, [strategy: :one_for_one]}, type: :supervisor) end)
-    |> IO.inspect()
+    |> then(fn mods -> {:ok, {{:one_for_one, 3, 5}, mods}} end)
   end
 
   @default_ports http: 4000, https: 4040

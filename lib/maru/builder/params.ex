@@ -380,7 +380,6 @@ defmodule Maru.Builder.Params do
           Parameter.snapshot
           |> Enum.filter(fn %Parameter{} -> true; _ -> false end)
           |> Enum.map(fn %Parameter{information: %Information{attr_name: attr_name}} -> attr_name end)
-          )
         runtime = quote do
           %Validator.Runtime{
             validate_func: fn result ->

@@ -9,7 +9,7 @@ defmodule Maru.Test do
   def start do
     Maru.Builder.MountLink.start
     Mix.Project.compile_path
-    |> to_char_list
+    |> to_charlist
     |> :cover.compile_beam_directory
     for module <- :cover.modules do
       if {:__mounted_modules__, 0} in module.__info__(:functions) do

@@ -22,7 +22,8 @@ defmodule Maru.Mixfile do
 
   def application do
     [ mod: { Maru, [] },
-      applications: [ :plug, :cowboy, :poison ]
+      applications: [ :plug, :cowboy, :poison ],
+      extra_applications: [:tools]
     ]
   end
 

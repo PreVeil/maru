@@ -3,7 +3,7 @@ defmodule Maru.Builder.PlugRouter do
   @doc false
   def __before_compile__(%Macro.Env{module: module}=env, routes) do
     plugs_before    = Module.get_attribute(module, :plugs_before) |> Enum.reverse
-    version_config  = (Application.compile_env(:maru, module) || [])[:versioning] || []
+    version_config  = (Application.get_env(:maru, module) || [])[:versioning] || []
     version_adapter = Maru.Builder.Versioning.get_adapter(version_config[:using])
 
     pipeline = [

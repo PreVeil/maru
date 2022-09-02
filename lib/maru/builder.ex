@@ -53,7 +53,7 @@ defmodule Maru.Builder do
       @plugs      []
       @func_id    0
 
-      @make_plug unquote(make_plug) or not is_nil(Application.get_env(:maru, __MODULE__))
+      @make_plug unquote(make_plug) or not is_nil(Application.compile_env(:maru, __MODULE__))
       @test (
         case Application.get_env(:maru, :test) do
           true  -> true

@@ -162,7 +162,7 @@ defmodule Maru.Test do
   Get response from conn as json.
   """
   def json_response(conn) do
-    conn.resp_body |> Poison.decode!
+    conn.resp_body |> Jason.decode!
   end
 
 end

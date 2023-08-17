@@ -15,7 +15,7 @@ defmodule Maru do
     @version
   end
 
-  json_library = Application.compile_env(:maru, :json_library, Poison)
+  json_library = Application.compile_env(:maru, :json_library, Jason)
 
   @doc false
   def start(_type, _args) do

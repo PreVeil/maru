@@ -7,7 +7,7 @@ defmodule Maru.Types.Json do
 
   @doc false
   def parse(input, _) do
-    input |> Poison.decode!
+    input |> Jason.decode!
   end
 
 end

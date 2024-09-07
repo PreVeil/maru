@@ -15,7 +15,7 @@ defmodule Maru.Builder.Extend do
       raise ":only and :except are in conflict!"
     end
 
-    module.__routes__
+    module.__routes__()
     |> Enum.filter(fn route ->
       (route.version == v_old) and getable?(routes_new, route)
     end)

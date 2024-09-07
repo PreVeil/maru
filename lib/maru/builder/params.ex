@@ -350,7 +350,7 @@ defmodule Maru.Builder.Params do
 
   defp do_parse_type(type) do
     module = Utils.make_type(type)
-    [{:module, module, module.arguments}]
+    [{:module, module, module.arguments()}]
   end
 
   defp parse_type_info(parsers) do

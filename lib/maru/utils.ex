@@ -3,7 +3,7 @@ defmodule Maru.Utils do
 
   @doc false
   def is_blank(s) do
-    s in [nil, "", '', %{}]
+    s in [nil, "", ~c'', %{}]
   end
 
   @doc false

@@ -22,7 +22,6 @@ defmodule Maru.Mixfile do
 
   def application do
     [ mod: { Maru, [] },
-      applications: [ :plug, :cowboy, :poison ],
       extra_applications: [:tools]
     ]
   end
@@ -30,7 +29,7 @@ defmodule Maru.Mixfile do
   defp deps do
     [ { :cowboy,  "~> 1.0" },
       { :plug,    "~> 1.0" },
-      { :poison,  "~> 1.5 or ~> 2.0 or ~> 3.0" },
+      { :jason, "~> 1.4" },
       { :inch_ex, "~> 0.5",  only: :docs },
       { :earmark, "~> 1.0",  only: :docs },
       { :ex_doc,  "~> 0.14", only: :docs },

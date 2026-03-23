@@ -14,7 +14,7 @@ defmodule Maru.Builder.Params do
   defmacro use(param) when is_atom(param) do
     quote do
       params = @shared_params[unquote(param)]
-      Module.eval_quoted __MODULE__, params, [], __ENV__
+      Code.eval_quoted params, [], __ENV__
     end
   end
 
@@ -22,7 +22,7 @@ defmodule Maru.Builder.Params do
     quote do
       for i <- unquote(params) do
         params = @shared_params[i]
-        Module.eval_quoted __MODULE__, params, [], __ENV__
+        Module.eval_quoted params, [], __ENV__
       end
     end
   end
@@ -191,9 +191,30 @@ defmodule Maru.Builder.Params do
     accumulator = %{
       options:     options,
       information: %Information{},
-      runtime:     quote do %Runtime{} end,
+      runtime:     %Runtime{}
     }
     Enum.reduce(pipeline, accumulator, &do_parse/2)
+    |> Map.update(:runtime, %Runtime{}, fn %Runtime{
+                                             attr_name: attr_name,
+                                             param_key: param_key,
+                                             children: children,
+                                             nested: nested,
+                                             blank_func: blank_func,
+                                             parser_func: parser_func,
+                                             validate_func: validate_func
+                                           } ->
+      quote do
+        %Runtime{
+          attr_name: unquote(attr_name),
+          param_key: unquote(param_key),
+          children: unquote(children),
+          nested: unquote(nested),
+          blank_func: unquote(blank_func),
+          parser_func: unquote(parser_func),
+          validate_func: unquote(validate_func)
+        }
+      end
+    end)
   end
 
   defp do_parse(:blank_func, %{options: options, information: info, runtime: runtime}) do
@@ -240,82 +261,77 @@ defmodule Maru.Builder.Params do
 
     %{ options:     Keyword.drop(options, [:keep_blank]),
        information: info,
-       runtime:     quote do
-         %{ unquote(runtime) | blank_func: unquote(func) }
-       end
+       runtime: %{runtime | blank_func: func}
      }
   end
 
   defp do_parse(:children, %{options: options, information: info, runtime: runtime}) do
-    {children, options}  = Keyword.pop(options, :children, [])
-    children_information = Maru.Utils.get_nested(children, :information)
-    children_runtime = Maru.Utils.get_nested(children, :runtime)
-    %{ options:     options,
-       information: %{ info | children: children_information },
-       runtime:     quote do
-         Map.put(unquote(runtime), :children, unquote(children_runtime))
-       end
-     }
+    {children, options} = Keyword.pop(options, :children, [])
+    children_information = Utils.get_nested(children, :information)
+    children_runtime = Utils.get_nested(children, :runtime)
+
+    %{
+      options: options,
+      information: %{info | children: children_information},
+      runtime: Map.put(runtime, :children, children_runtime)
+    }
   end
 
   defp do_parse(key, %{options: options, information: info, runtime: runtime})
-  when key in [:required, :default, :desc] do
+       when key in [:required, :default, :desc] do
     {value, options} = Keyword.pop(options, key)
-    %{ options:     options,
-       information: Map.put(info, key, value),
-       runtime:     runtime,
-     }
+    %{options: options, information: Map.put(info, key, value), runtime: runtime}
   end
 
   defp do_parse(:attr_name, %{options: options, information: info, runtime: runtime}) do
     attr_name = options |> Keyword.fetch!(:attr_name)
-    source    = options |> Keyword.get(:source)
-    options   = options |> Keyword.drop([:attr_name, :source])
-    param_key = source || (attr_name |> to_string)
-    %{ options:     options,
-       information: %{ info | attr_name: attr_name, param_key: param_key },
-       runtime:     quote do
-         %{ unquote(runtime) |
-            attr_name: unquote(attr_name),
-            param_key: unquote(param_key),
-          }
-       end
+    source = options |> Keyword.get(:source)
+    options = options |> Keyword.drop([:attr_name, :source])
+    param_key = source || attr_name |> to_string
+
+    %{
+      options: options,
+      information: %{info | attr_name: attr_name, param_key: param_key},
+      runtime: %{runtime | attr_name: attr_name, param_key: param_key}
     }
   end
 
   defp do_parse(:type, %{options: options, information: info, runtime: runtime}) do
     parsers = options |> Keyword.get(:type, :string) |> do_parse_type
+
     dropped =
       for {:module, _, arguments} <- parsers do
         arguments
-      end |> Enum.concat
+      end
+      |> Enum.concat()
+
     nested =
       parsers
-      |> List.last
+      |> List.last()
       |> case do
-        {:module, Maru.Types.Map, _}  -> :map
+        {:module, Maru.Types.Map, _} -> :map
         {:module, Maru.Types.List, _} -> :list
-        _                             -> nil
+        _ -> nil
       end
+
     type = parse_type_info(parsers)
     func = Utils.make_parser(parsers, options)
-    %{ options:     options |> Keyword.drop([:type | dropped]),
-       information: %{ info | type: type },
-       runtime:     quote do
-         %{ unquote(runtime) |
-            parser_func: unquote(func),
-            nested: unquote(nested),
-          }
-       end
-     }
+
+    %{
+      options: options |> Keyword.drop([:type | dropped]),
+      information: %{info | type: type},
+      runtime: %{runtime | parser_func: func, nested: nested}
+    }
   end
 
   defp do_parse(:validators, %{options: validators, information: info, runtime: runtime}) do
     %{attr_name: attr_name} = info
     value = quote do: value
+
     block =
       for {validator, option} <- validators do
         module = Utils.make_validator(validator)
+
         quote do
           unquote(module).validate_param!(
             unquote(attr_name),
@@ -324,16 +340,18 @@ defmodule Maru.Builder.Params do
           )
         end
       end
+
     %Parameter{
       information: info,
-      runtime:     quote do
-        %{ unquote(runtime) |
-           validate_func: fn unquote(value) -> unquote_splicing(block) end
-         }
-      end
+      runtime: %{
+        runtime
+        | validate_func:
+            quote do
+              fn unquote(value) -> (unquote_splicing(block)) end
+            end
+      }
     }
   end
-
 
   defp do_parse_type({:fn, _, _}=func) do
     [{:func, func}]
